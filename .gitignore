@@ -129,9 +129,9 @@ dmypy.json
 .pyre/
 
 # excel file
-.xls
-.xlsx
+*.xls
+*.xlsx
 .*
 
 # jupyter nb
-.ipynb
+*.ipynb
