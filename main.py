@@ -10,17 +10,6 @@ from mail_tc import *
 
 base_path = os.path.join(os.path.expanduser('~'),'code/Repositories/auto-mail')
 
-df = pd.read_excel(os.path.join(base_path,'mail_list.xlsx'))
-df = df.dropna(subset=['西法老师'])
-names = df['西法老师'].drop_duplicates().to_list()
-mail_mapping = df.set_index('西法老师').to_dict()['邮箱']
-
-files = [i for i in os.listdir(os.path.join(base_path,'files')) if (not i.startswith(('~','.'))) and i.endswith('.xlsx')]
-files_name = [i.split('.')[0] for i in files]
-
-files_not_in_names = [i for i in files_name if i not in names]
-names_not_in_files = [i for i in names if i not in files_name]
-
 # title
 st.title(':fire:Auto-mail:dash:')
 
@@ -67,7 +56,9 @@ if module == 'Split Files':
             pass
 
         st.header('Confirm and Split')
-        if st.button('Split'):
+        button_split = st.button('Split')
+        my_bar = st.sidebar.progress(0)
+        if button_split:
             for pname in df[name]:
                 _df = df[df[name] == pname]
                 if role_map[pname] == s_role:
@@ -77,6 +68,18 @@ if module == 'Split Files':
                 _df.to_excel(os.path.join(base_path,f'files/{pname}.xlsx'),index=False)
 
 elif module == 'Send Mails':
+
+    df = pd.read_excel(os.path.join(base_path,'mail_list.xlsx'))
+    df = df.dropna(subset=['西法老师'])
+    names = df['西法老师'].drop_duplicates().to_list()
+    mail_mapping = df.set_index('西法老师').to_dict()['邮箱']
+
+    files = [i for i in os.listdir(os.path.join(base_path,'files')) if (not i.startswith(('~','.'))) and i.endswith('.xlsx')]
+    files_name = [i.split('.')[0] for i in files]
+
+    files_not_in_names = [i for i in files_name if i not in names]
+    files_in_names = [i for i in files_name if i in names]
+    names_not_in_files = [i for i in names if i not in files_name]
 
     # side bar
     st.sidebar.subheader('Files not in the mail list')
@@ -91,25 +94,31 @@ elif module == 'Send Mails':
     st.sidebar.subheader('Confirm and send')
     button_send = st.sidebar.button('Send')
     my_bar = st.sidebar.progress(0)
+
+    def flag_it(x,a, error):
+        try:
+            result = a[x]
+        except:
+            result = error
+        return result
+
     if button_send:
         # df['sent flag'] = 'x'
-        flag = []
-        ttl = len(names)
+        flag = {}
+        ttl = len(files_in_names)
         count = 0
-        for name in names:
-            if name in files_name:
-                address = mail_mapping[name]
-                # error_msg = send_mail(address, mail_subject, mail_body,os.path.join(base_path,f'files/{name}.xlsx'), f'{name}.xlsx')
-                error_msg = 'success'
-                if error_msg == 'success':
-                    flag.append('sent')
-                else:
-                    flag.append('send failed')
+        for name in files_in_names:
+            # print(name)
+            address = mail_mapping[name]
+            error_msg = send_mail(address, mail_subject, mail_body,os.path.join(base_path,f'files/{name}.xlsx'), f'{name}.xlsx')
+            # error_msg = 'success'
+            if error_msg == 'success':
+                flag[name] = 'sent'
             else:
-                flag.append('not correspondent file')
+                flag[name] = 'send failed'
             count += 1
             my_bar.progress(count/ttl)
-        df['sent flag'] = flag
+        df['sent flag'] = df['西法老师'].apply(lambda x: flag_it(x,flag,'no conrespondent file'))
     else:
         pass
 
