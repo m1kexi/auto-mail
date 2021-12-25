@@ -127,3 +127,11 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# excel file
+.xls
+.xlsx
+.*
+
+# jupyter nb
+.ipynb
